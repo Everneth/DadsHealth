@@ -1,36 +1,60 @@
 ﻿using Discord;
+using Discord.Commands;
 using Discord.WebSocket;
+using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace DadsHealth
 {
     class Program
     {
-        private DiscordSocketClient _client;
-        private IServiceProvider _services;
 
         public static void Main(string[] args)
-            => new Program().MainAsync().GetAwaiter().GetResult();
+            => new Program()
+            .MainAsync()
+            .GetAwaiter()
+            .GetResult();
 
         public async Task MainAsync()
         {
-            _client = new DiscordSocketClient();
 
-            _client.Log += Log;
+            using (var services = ConfigureServices())
+            {
+                var _client = services.GetRequiredService<DiscordSocketClient>();
 
-            await _client.LoginAsync(TokenType.Bot,
-                Environment.GetEnvironmentVariable("DiscordToken"));
-            await _client.StartAsync();
+                _client.Log += LogAsync;
+                services.GetRequiredService<CommandService>().Log += LogAsync;
 
-            // Block this task until the program is closed.
-            await Task.Delay(-1);
+                await _client.LoginAsync(TokenType.Bot,
+                    Config.Token);
+                await _client.StartAsync();
+
+                await services.GetRequiredService<CommandHandlingService>().InitAsync();
+
+                await _client.SetGameAsync("I'm being paternity tested...");
+
+                // Block this task until the program is closed.
+                await Task.Delay(-1);
+            }
         }
 
-        private Task Log(LogMessage msg)
+        private ServiceProvider ConfigureServices()
+        {
+            return new ServiceCollection()
+                .AddSingleton<DiscordSocketClient>()
+                .AddSingleton<CommandService>()
+                .AddSingleton<CommandHandlingService>()
+                .AddSingleton<HttpClient>()
+                .BuildServiceProvider();
+        }
+
+        private Task LogAsync(LogMessage msg)
         {
             Console.WriteLine(msg.ToString());
             return Task.CompletedTask;
         }
+
     }
 }
