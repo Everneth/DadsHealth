@@ -1,4 +1,5 @@
-﻿using Discord;
+﻿using DadsHealth.Services;
+using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
@@ -47,6 +48,7 @@ namespace DadsHealth
                 .AddSingleton<CommandService>()
                 .AddSingleton<CommandHandlingService>()
                 .AddSingleton<HttpClient>()
+                .AddSingleton<HeartBeatService>()
                 .BuildServiceProvider();
         }
 
